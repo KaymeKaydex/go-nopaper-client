@@ -112,7 +112,7 @@ func (c *Client) RegisterUser(ctx context.Context, rawReq RegisterUserRequest) (
 		return uuid.Nil, err
 	}
 
-	if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 		// Good response.
 		rawResp := &UserGUIDResponse{}
 
