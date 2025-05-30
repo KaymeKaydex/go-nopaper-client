@@ -1,4 +1,4 @@
-package go_nopaper_client
+package nopaper
 
 import (
 	"context"
@@ -77,6 +77,16 @@ func (c *Client) CreateSignature(ctx context.Context, rawReq CreateSignatureRequ
 		}
 
 		return rawResp.CertificateID, nil
+	} else if resp.StatusCode == http.StatusBadRequest {
+		// Bad response.
+		rawResp := &ErrorResponse{}
+
+		err = json.NewDecoder(resp.Body).Decode(rawResp)
+		if err != nil {
+			return uuid.Nil, fmt.Errorf("cant decode bad response with error: %w", err)
+		}
+
+		return uuid.Nil, errorByCode(rawResp.Code)
 	} else {
 		bts, err := io.ReadAll(resp.Body)
 		if err != nil {

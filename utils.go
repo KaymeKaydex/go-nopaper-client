@@ -1,4 +1,4 @@
-package go_nopaper_client
+package nopaper
 
 import (
 	"fmt"

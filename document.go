@@ -1,4 +1,4 @@
-package go_nopaper_client
+package nopaper
 
 import (
 	"bytes"
@@ -233,4 +233,112 @@ func (c *Client) ConfirmSMSSign(ctx context.Context, documentID int, signatureID
 	}
 
 	return emptyResponseResult(resp)
+}
+
+type GetFileIDsInDocumentResponse struct {
+	OriginFileList           []FileIDInfo `json:"originFileList"`
+	OriginFileWithStampList  []FileIDInfo `json:"originFileWithStampList"`
+	OfertaList               []FileIDInfo `json:"ofertaList"`
+	OfertaWithStampList      []FileIDInfo `json:"ofertaWithStampList"`
+	ProcuratoryList          []FileIDInfo `json:"procuratoryList"`
+	ProcuratoryWithStampList []FileIDInfo `json:"procuratoryWithStampList"`
+}
+
+type FileIDInfo struct {
+	FileID                  string    `json:"fileId"`
+	OriginNameWithExtension string    `json:"originNameWithExtension"`
+	SizeKb                  int       `json:"sizeKb"`
+	OriginalFileId          uuid.UUID `json:"originalFileId"`
+}
+
+func (c *Client) GetFileIDsInDocument(ctx context.Context, documentID int) (*GetFileIDsInDocumentResponse, error) {
+	req, err := http.NewRequestWithContext(ctx,
+		http.MethodGet,
+		c.url+fmt.Sprintf("/document/%d/file-info/list", documentID),
+		nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+		// Good response.
+		rawResp := &GetFileIDsInDocumentResponse{}
+
+		err = json.NewDecoder(resp.Body).Decode(rawResp)
+		if err != nil {
+			return nil, fmt.Errorf("cant decode good response with error: %w", err)
+		}
+
+		return rawResp, nil
+	} else {
+		bts, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, fmt.Errorf("unknown status code from nopaper: %s with status: %s", resp.Status, string(bts))
+	}
+}
+
+type GetFilesByIDRequest struct {
+	FileID     string `json:"fileId"`
+	DocumentID int    `json:"documentId"`
+}
+
+type FileInfoResponse struct {
+	FileID                uuid.UUID `json:"fileId"`
+	FileBase64            string    `json:"fileBase64"`
+	FileNameWithExtension string    `json:"fileNameWithExtension"`
+}
+
+type GetFilesByIDResponse struct {
+	FileInfoList []FileInfoResponse `json:"fileInfoList"`
+}
+
+func (c *Client) GetFilesByID(ctx context.Context, rawReq []GetFilesByIDRequest) ([]FileInfoResponse, error) {
+	body := bytes.NewBuffer(nil)
+	err := json.NewEncoder(body).Encode(map[string][]GetFilesByIDRequest{
+		"documentFileInfoList": rawReq,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx,
+		http.MethodPost,
+		c.url+fmt.Sprintf("/document/file/list"),
+		body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+		// Good response.
+		rawResp := &GetFilesByIDResponse{}
+
+		err = json.NewDecoder(resp.Body).Decode(&rawResp)
+		if err != nil {
+			return nil, fmt.Errorf("cant decode good response with error: %w", err)
+		}
+
+		return rawResp.FileInfoList, nil
+	} else {
+		bts, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, fmt.Errorf("unknown status code from nopaper: %s with status: %s", resp.Status, string(bts))
+	}
 }

@@ -1,6 +1,8 @@
-package go_nopaper_client
+package nopaper
 
 import (
+	"crypto/tls"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -20,17 +22,26 @@ type Config struct {
 	URL string `yaml:"url"`
 	// Token is a Nopaper auth token, that contains in request header X-API-KEY.
 	Token string `yaml:"token"`
+	// InsecureSkipVerify - ignores ssl certificates,
+	// it might be usefully if you have no CA certificates.
+	InsecureSkipVerify bool
 }
 
 // NewClient creates new Nopaper service client.
 func NewClient(cfg Config) (*Client, error) {
+	if cfg.Token == "" {
+		return nil, fmt.Errorf("token cant be nil")
+	}
 	// Preparing URL for a work.
 	cfg.URL = strings.ReplaceAll(cfg.URL, " ", "")
 	cfg.URL = strings.TrimSuffix(cfg.URL, "/")
 
-	// Provide auth header with token for all client requests.
-	client := http.DefaultClient
-	client.Transport = newAuthHeaderTransport(http.DefaultTransport, cfg.Token)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify},
+	}
+	client := &http.Client{Transport: tr}
+
+	client.Transport = newAuthHeaderTransport(tr, cfg.Token)
 
 	return &Client{
 		client: client,

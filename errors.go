@@ -1,4 +1,4 @@
-package go_nopaper_client
+package nopaper
 
 import "fmt"
 
@@ -13,14 +13,17 @@ func (e Error) Error() string {
 }
 
 var (
-	ProfileByPhoneNotFound            Error = "profile by phone not found"
-	RequestBodyWasNotConvertedToModel Error = "request body was not converted to model"
+	ErrProfileByPhoneNotFound            Error = "profile by phone not found"
+	ErrRequestBodyWasNotConvertedToModel Error = "request body was not converted to model"
+	// ErrNotFullUserProfile - errors is caused by not full user profile.
+	ErrNotFullUserProfile Error = "cannot be created certificate without full name profile fl"
 )
 
 var errorMap = map[string]Error{
-	"NOPAPERPARTNER.10401":         ProfileByPhoneNotFound,
-	"NOPAPERPARTNERLIB.10401":      ProfileByPhoneNotFound,
-	"NOPAPERPARTNERAPI.CORE.41116": RequestBodyWasNotConvertedToModel,
+	"NOPAPERPARTNER.10401":         ErrProfileByPhoneNotFound,
+	"NOPAPERPARTNERLIB.10401":      ErrProfileByPhoneNotFound,
+	"NOPAPERPARTNERAPI.CORE.41116": ErrRequestBodyWasNotConvertedToModel,
+	"NOPAPERPARTNER.10300":         ErrNotFullUserProfile,
 }
 
 func errorByCode(code string) error {

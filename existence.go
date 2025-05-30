@@ -1,4 +1,4 @@
-package go_nopaper_client
+package nopaper
 
 import (
 	"bytes"
@@ -36,7 +36,7 @@ type UserGUIDResponse struct {
 	UserGUID uuid.UUID `json:"userGuid"`
 }
 
-type GetUserUUIDByPhoneErrorResponse struct {
+type ErrorResponse struct {
 	Code string `json:"code"`
 }
 
@@ -70,7 +70,7 @@ func (c *Client) GetUserUUIDByPhone(ctx context.Context, phone string) (uuid.UUI
 		return rawResp.UserGUID, nil
 	} else if resp.StatusCode == http.StatusBadRequest {
 		// Bad response.
-		rawResp := &GetUserUUIDByPhoneErrorResponse{}
+		rawResp := &ErrorResponse{}
 
 		err = json.NewDecoder(resp.Body).Decode(rawResp)
 		if err != nil {
